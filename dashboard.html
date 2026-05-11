@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mon Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   /* ── Reset & Base ── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -527,69 +529,57 @@ let clientId = '862025356397-nrsn0qpr0e7225vhe52b0hen15plb38t.apps.googleusercon
 document.getElementById('currentOrigin').textContent = location.origin;
 document.getElementById('clientIdInput').value = clientId;
 
-// ── INIT séquentiel robuste ───────────────────────────────────────────────────
-let gapiReady = false;
-let gisReady = false;
-
-function checkBothReady() {
-  if (gapiReady && gisReady) {
-    // Les deux scripts sont chargés, on peut activer le bouton
-    document.getElementById('authScreen').style.display = 'flex';
-    document.getElementById('configScreen').style.display = 'none';
-    document.getElementById('btnSignIn').disabled = false;
-    document.getElementById('btnSignIn').style.opacity = '1';
-  }
-}
-
-// Callback appelé automatiquement par gapi.js
-function gapiLoaded() {
-  window.gapi.load('client', () => {
-    gapi = window.gapi;
-    gapiReady = true;
-    checkBothReady();
-  });
-}
-
-// Callback appelé automatiquement par gsi/client.js
-function gisLoaded() {
-  tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: clientId,
-    scope: SCOPES,
-    callback: handleToken,
-  });
-  gisReady = true;
-  checkBothReady();
-}
-
+// ── INIT ─────────────────────────────────────────────────────────────────────
 function loadGapi() {
-  // Griser le bouton pendant le chargement
+  // Attendre que gapi ET google.accounts soient disponibles
+  function waitAndInit() {
+    if (typeof gapi === 'undefined' || typeof google === 'undefined') {
+      setTimeout(waitAndInit, 200);
+      return;
+    }
+    // Initialiser gapi.client
+    gapi.load('client', () => {
+      // Initialiser tokenClient
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: SCOPES,
+        callback: handleToken,
+      });
+      // Activer le bouton
+      const btn = document.getElementById('btnSignIn');
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.textContent = '';
+      // Recréer le SVG + texte
+      btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg> Connexion avec Google`;
+      console.log('✅ Google APIs prêtes');
+    });
+  }
+
+  // Griser le bouton pendant init
   const btn = document.getElementById('btnSignIn');
   btn.disabled = true;
-  btn.style.opacity = '0.6';
+  btn.style.opacity = '0.5';
+  btn.textContent = 'Chargement…';
 
-  // Charger gapi
-  const s1 = document.createElement('script');
-  s1.src = 'https://apis.google.com/js/api.js';
-  s1.onload = gapiLoaded;
-  s1.onerror = () => showNotif('Erreur chargement Google API', 'error');
-  document.head.appendChild(s1);
-
-  // Charger GIS en parallèle
-  const s2 = document.createElement('script');
-  s2.src = 'https://accounts.google.com/gsi/client';
-  s2.onload = gisLoaded;
-  s2.onerror = () => showNotif('Erreur chargement Google Identity', 'error');
-  document.head.appendChild(s2);
+  waitAndInit();
 }
 
 document.getElementById('btnSignIn').addEventListener('click', () => {
   if (!clientId) { showConfig(); return; }
-  if (!tokenClient) { showNotif('Scripts Google pas encore chargés, réessaie dans 2s', 'error'); return; }
+  if (!tokenClient) {
+    showNotif('Encore en chargement, réessaie dans 2 secondes…', 'info');
+    return;
+  }
   tokenClient.requestAccessToken({ prompt: 'consent' });
 });
 
 async function handleToken(resp) {
-  if (resp.error) { showNotif('Erreur de connexion : ' + resp.error, 'error'); return; }
+  if (resp.error) {
+    showNotif('Erreur de connexion : ' + resp.error, 'error');
+    console.error('Token error:', resp);
+    return;
+  }
   try {
     await gapi.client.init({ discoveryDocs: [DISCOVERY_DOC] });
     isSignedIn = true;
@@ -597,7 +587,7 @@ async function handleToken(resp) {
     document.getElementById('appMain').style.display = 'grid';
     await syncAll();
   } catch(e) {
-    showNotif('Erreur initialisation API : ' + e.message, 'error');
+    showNotif('Erreur init API : ' + e.message, 'error');
     console.error(e);
   }
 }

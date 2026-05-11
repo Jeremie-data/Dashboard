@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mon Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://apis.google.com/js/api.js"></script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+
 <style>
   /* ── Reset & Base ── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -531,52 +530,81 @@ document.getElementById('clientIdInput').value = clientId;
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
 function loadGapi() {
-  // Attendre que gapi ET google.accounts soient disponibles
-  function waitAndInit() {
-    if (typeof gapi === 'undefined' || typeof google === 'undefined') {
-      setTimeout(waitAndInit, 200);
-      return;
-    }
-    // Initialiser gapi.client
-    gapi.load('client', () => {
-      // Initialiser tokenClient
-      tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope: SCOPES,
-        callback: handleToken,
-      });
-      // Activer le bouton
-      const btn = document.getElementById('btnSignIn');
-      btn.disabled = false;
-      btn.style.opacity = '1';
-      btn.textContent = '';
-      // Recréer le SVG + texte
-      btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg> Connexion avec Google`;
-      console.log('✅ Google APIs prêtes');
-    });
-  }
-
-  // Griser le bouton pendant init
   const btn = document.getElementById('btnSignIn');
   btn.disabled = true;
   btn.style.opacity = '0.5';
+  btn.style.background = '#ccc';
+  btn.style.color = '#333';
   btn.textContent = 'Chargement…';
 
-  waitAndInit();
+  // Charger gapi.js
+  const s1 = document.createElement('script');
+  s1.src = 'https://apis.google.com/js/api.js';
+  s1.onload = () => {
+    window.gapi.load('client', onGapiReady);
+  };
+  s1.onerror = () => { btn.textContent = '⚠ Erreur réseau gapi'; btn.disabled = false; };
+  document.head.appendChild(s1);
+
+  // Charger GIS
+  const s2 = document.createElement('script');
+  s2.src = 'https://accounts.google.com/gsi/client';
+  s2.onload = onGisReady;
+  s2.onerror = () => { btn.textContent = '⚠ Erreur réseau GIS'; btn.disabled = false; };
+  document.head.appendChild(s2);
+}
+
+let _gapiClientReady = false;
+let _gisReady = false;
+
+function onGapiReady() {
+  _gapiClientReady = true;
+  console.log('gapi client ready');
+  tryActivate();
+}
+
+function onGisReady() {
+  _gisReady = true;
+  console.log('GIS ready');
+  tryActivate();
+}
+
+function tryActivate() {
+  if (!_gapiClientReady || !_gisReady) return;
+  try {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: SCOPES,
+      callback: handleToken,
+    });
+    const btn = document.getElementById('btnSignIn');
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.background = 'white';
+    btn.style.color = '#333';
+    btn.style.cursor = 'pointer';
+    const SVG = '<svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>';
+    btn.innerHTML = SVG + ' Connexion avec Google';
+    console.log('✅ Tout prêt, bouton activé');
+  } catch(e) {
+    console.error('Erreur initTokenClient:', e);
+    const btn = document.getElementById('btnSignIn');
+    btn.textContent = '⚠ Erreur Client ID — vérifier la config';
+    btn.style.background = '#f06060';
+    btn.style.color = 'white';
+    btn.disabled = false;
+  }
 }
 
 document.getElementById('btnSignIn').addEventListener('click', () => {
   if (!clientId) { showConfig(); return; }
-  if (!tokenClient) {
-    showNotif('Encore en chargement, réessaie dans 2 secondes…', 'info');
-    return;
-  }
+  if (!tokenClient) { showNotif('Encore en chargement…', 'info'); return; }
   tokenClient.requestAccessToken({ prompt: 'consent' });
 });
 
 async function handleToken(resp) {
   if (resp.error) {
-    showNotif('Erreur de connexion : ' + resp.error, 'error');
+    showNotif('Erreur OAuth : ' + resp.error, 'error');
     console.error('Token error:', resp);
     return;
   }

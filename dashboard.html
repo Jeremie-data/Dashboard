@@ -527,46 +527,79 @@ let clientId = '862025356397-nrsn0qpr0e7225vhe52b0hen15plb38t.apps.googleusercon
 document.getElementById('currentOrigin').textContent = location.origin;
 document.getElementById('clientIdInput').value = clientId;
 
-function loadGapi() {
-  const s = document.createElement('script');
-  s.src = 'https://apis.google.com/js/api.js';
-  s.onload = () => {
-    window.gapi.load('client', async () => {
-      gapi = window.gapi;
-      if (clientId) initGis();
-      else showConfig();
-    });
-  };
-  document.head.appendChild(s);
-}
+// ── INIT séquentiel robuste ───────────────────────────────────────────────────
+let gapiReady = false;
+let gisReady = false;
 
-function initGis() {
-  const s = document.createElement('script');
-  s.src = 'https://accounts.google.com/gsi/client';
-  s.onload = () => {
-    tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: clientId,
-      scope: SCOPES,
-      callback: handleToken,
-    });
+function checkBothReady() {
+  if (gapiReady && gisReady) {
+    // Les deux scripts sont chargés, on peut activer le bouton
     document.getElementById('authScreen').style.display = 'flex';
     document.getElementById('configScreen').style.display = 'none';
-  };
-  document.head.appendChild(s);
+    document.getElementById('btnSignIn').disabled = false;
+    document.getElementById('btnSignIn').style.opacity = '1';
+  }
+}
+
+// Callback appelé automatiquement par gapi.js
+function gapiLoaded() {
+  window.gapi.load('client', () => {
+    gapi = window.gapi;
+    gapiReady = true;
+    checkBothReady();
+  });
+}
+
+// Callback appelé automatiquement par gsi/client.js
+function gisLoaded() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: SCOPES,
+    callback: handleToken,
+  });
+  gisReady = true;
+  checkBothReady();
+}
+
+function loadGapi() {
+  // Griser le bouton pendant le chargement
+  const btn = document.getElementById('btnSignIn');
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+
+  // Charger gapi
+  const s1 = document.createElement('script');
+  s1.src = 'https://apis.google.com/js/api.js';
+  s1.onload = gapiLoaded;
+  s1.onerror = () => showNotif('Erreur chargement Google API', 'error');
+  document.head.appendChild(s1);
+
+  // Charger GIS en parallèle
+  const s2 = document.createElement('script');
+  s2.src = 'https://accounts.google.com/gsi/client';
+  s2.onload = gisLoaded;
+  s2.onerror = () => showNotif('Erreur chargement Google Identity', 'error');
+  document.head.appendChild(s2);
 }
 
 document.getElementById('btnSignIn').addEventListener('click', () => {
   if (!clientId) { showConfig(); return; }
+  if (!tokenClient) { showNotif('Scripts Google pas encore chargés, réessaie dans 2s', 'error'); return; }
   tokenClient.requestAccessToken({ prompt: 'consent' });
 });
 
 async function handleToken(resp) {
-  if (resp.error) { showNotif('Erreur de connexion: ' + resp.error, 'error'); return; }
-  await gapi.client.init({ discoveryDocs: [DISCOVERY_DOC] });
-  isSignedIn = true;
-  document.getElementById('authScreen').style.display = 'none';
-  document.getElementById('appMain').style.display = 'grid';
-  await syncAll();
+  if (resp.error) { showNotif('Erreur de connexion : ' + resp.error, 'error'); return; }
+  try {
+    await gapi.client.init({ discoveryDocs: [DISCOVERY_DOC] });
+    isSignedIn = true;
+    document.getElementById('authScreen').style.display = 'none';
+    document.getElementById('appMain').style.display = 'grid';
+    await syncAll();
+  } catch(e) {
+    showNotif('Erreur initialisation API : ' + e.message, 'error');
+    console.error(e);
+  }
 }
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
@@ -580,7 +613,7 @@ document.getElementById('btnSaveConfig').addEventListener('click', () => {
   clientId = val;
   localStorage.setItem('gtask_client_id', clientId);
   document.getElementById('configScreen').style.display = 'none';
-  initGis();
+  loadGapi();
 });
 
 // ── SYNC ──────────────────────────────────────────────────────────────────────

@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0e0f11; --bg2: #16181c; --bg3: #1e2128; --bg4: #262a33;
+    --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
+    --text: #e8eaf0; --text2: #8b90a0; --text3: #555a6a;
+    --accent: #6c8fff; --accent2: #3d5fe0;
+    --green: #3ecf8e; --amber: #f5a623; --red: #f06060; --purple: #a78bfa;
+    --archive: #a78bfa;
+    --radius: 10px; --radius-lg: 16px; --sidebar-w: 240px;
+    --font: 'DM Sans', sans-serif; --font-mono: 'DM Mono', monospace;
+  }
+  html, body { height: 100%; font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; overflow: hidden; }
+  .app { display: grid; grid-template-columns: var(--sidebar-w) 1fr; height: 100vh; }
+
+  /* SIDEBAR */
+  .sidebar { background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  .sidebar-header { padding: 20px 18px 16px; border-bottom: 1px solid var(--border); }
+  .brand { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; display: flex; align-items: center; gap: 8px; }
+  .brand-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); flex-shrink: 0; transition: all 0.3s; }
+
+  /* Mode tabs */
+  .mode-tabs { display: flex; padding: 10px 10px 0; gap: 4px; }
+  .mode-tab { flex: 1; padding: 7px 6px; border-radius: var(--radius); border: none; font-family: var(--font); font-size: 12px; font-weight: 500; cursor: pointer; color: var(--text2); background: transparent; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+  .mode-tab:hover { background: var(--bg3); color: var(--text); }
+  .mode-tab.active { background: rgba(108,143,255,0.12); color: var(--accent); }
+  .mode-tab.archive-tab.active { background: rgba(167,139,250,0.12); color: var(--archive); }
+
+  .sidebar-section { padding: 14px 10px 6px; }
+  .sidebar-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; color: var(--text3); text-transform: uppercase; padding: 0 8px 8px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius); cursor: pointer; color: var(--text2); transition: all 0.15s; font-size: 13.5px; user-select: none; }
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active { background: rgba(108,143,255,0.12); color: var(--accent); font-weight: 500; }
+  .nav-item.active.archive-nav { background: rgba(167,139,250,0.12); color: var(--archive); }
+  .nav-item .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .nav-item .count { font-family: var(--font-mono); font-size: 11px; color: var(--text3); background: var(--bg4); padding: 1px 6px; border-radius: 20px; }
+  .sidebar-projects { overflow-y: auto; flex: 1; }
+  .sidebar-footer { margin-top: auto; padding: 14px; border-top: 1px solid var(--border); }
+  .btn-new-project { width: 100%; padding: 9px; border-radius: var(--radius); background: var(--accent2); color: white; border: none; font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; justify-content: center; gap: 7px; }
+  .btn-new-project:hover { opacity: 0.85; }
+
+  /* Nav item action buttons */
+  .nav-item-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+  .btn-del-project, .btn-edit-project { background: none; border: none; cursor: pointer; padding: 2px 4px; border-radius: 4px; opacity: 0; transition: all 0.15s; line-height: 1; }
+  .nav-item:hover .btn-del-project, .nav-item:hover .btn-edit-project { opacity: 1; }
+  .btn-del-project { color: var(--text3); font-size: 13px; }
+  .btn-del-project:hover { color: var(--red); background: rgba(240,96,96,0.12); }
+  .btn-edit-project { color: var(--text3); font-size: 11px; }
+  .btn-edit-project:hover { color: var(--accent); background: rgba(108,143,255,0.12); }
+
+  /* MAIN */
+  .main { display: flex; flex-direction: column; overflow: hidden; }
+  .topbar { padding: 18px 28px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; flex-shrink: 0; background: var(--bg); transition: border-color 0.3s; }
+  .topbar-title { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; flex: 1; transition: color 0.3s; }
+  .archive-mode .topbar { border-bottom-color: rgba(167,139,250,0.2); }
+  .archive-mode .topbar-title { color: var(--archive); }
+  .view-switcher { display: flex; background: var(--bg3); border-radius: 8px; padding: 3px; gap: 2px; }
+  .view-btn { padding: 5px 12px; border-radius: 6px; border: none; font-family: var(--font); font-size: 12px; font-weight: 500; cursor: pointer; color: var(--text2); background: transparent; transition: all 0.15s; }
+  .view-btn.active { background: var(--bg2); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+  .btn-add-task { padding: 7px 14px; border-radius: var(--radius); background: var(--accent); color: white; border: none; font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; gap: 6px; }
+  .btn-add-task:hover { opacity: 0.85; }
+  .btn-icon { background: var(--bg4); border: 1px solid var(--border); border-radius: 7px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text2); font-size: 15px; transition: all 0.15s; }
+  .btn-icon:hover { background: var(--bg3); color: var(--text); }
+  .content { flex: 1; overflow-y: auto; padding: 24px 28px; }
+  .content::-webkit-scrollbar { width: 5px; }
+  .content::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 10px; }
+
+  /* KANBAN */
+  .kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; align-items: start; }
+  .kanban-col { background: var(--bg2); border-radius: var(--radius-lg); border: 1px solid var(--border); overflow: hidden; }
+  .kanban-col-header { padding: 14px 16px 12px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); }
+  .col-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .col-todo .col-badge { background: rgba(139,144,160,0.15); color: var(--text2); }
+  .col-waiting .col-badge { background: rgba(245,166,35,0.15); color: var(--amber); }
+  .col-inprogress .col-badge { background: rgba(108,143,255,0.15); color: var(--accent); }
+  .col-done .col-badge { background: rgba(62,207,142,0.12); color: var(--green); }
+  .col-count { margin-left: auto; font-size: 12px; font-family: var(--font-mono); color: var(--text3); }
+  .kanban-cards { padding: 12px; display: flex; flex-direction: column; gap: 8px; min-height: 60px; }
+
+  /* TASK CARD */
+  .task-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 14px; cursor: pointer; transition: all 0.15s; }
+  .task-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+  .task-card.readonly { cursor: default; }
+  .task-card.readonly:hover { transform: none; border-color: var(--border); }
+  .task-card-header { display: flex; align-items: flex-start; gap: 7px; margin-bottom: 6px; }
+  .task-card-icon { font-size: 13px; line-height: 1.4; flex-shrink: 0; margin-top: 1px; }
+  .task-card-title { font-size: 13px; font-weight: 500; line-height: 1.4; flex: 1; }
+  .task-card-title.done { text-decoration: line-through; color: var(--text3); }
+  .priority-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .p-high { background: var(--red); box-shadow: 0 0 5px var(--red); }
+  .p-medium { background: var(--amber); box-shadow: 0 0 5px var(--amber); }
+  .p-low { background: var(--green); box-shadow: 0 0 5px var(--green); }
+  .task-card-desc { font-size: 12px; color: var(--text2); line-height: 1.5; margin-bottom: 10px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .task-card-footer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .tag { font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 4px; font-family: var(--font-mono); }
+  .tag-blue { background: rgba(108,143,255,0.15); color: var(--accent); }
+  .tag-green { background: rgba(62,207,142,0.12); color: var(--green); }
+  .tag-amber { background: rgba(245,166,35,0.15); color: var(--amber); }
+  .tag-red { background: rgba(240,96,96,0.12); color: var(--red); }
+  .task-date { font-size: 11px; color: var(--text3); margin-left: auto; font-family: var(--font-mono); }
+  .task-date.overdue { color: var(--red); }
+  .subtasks-count { font-size: 11px; color: var(--text2); display: flex; align-items: center; gap: 4px; }
+  .progress-mini { height: 3px; background: var(--bg4); border-radius: 10px; margin-top: 8px; overflow: hidden; }
+  .progress-mini-fill { height: 100%; background: var(--green); border-radius: 10px; }
+  /* Card progress badge (top-right) */
+  .card-progress-badge { font-size: 14px; font-weight: 600; font-family: var(--font-mono); padding: 1px 7px; border-radius: 4px; white-space: nowrap; margin-left: auto; line-height: 1.4; }
+  .card-progress-badge.in-progress { background: rgba(108,143,255,0.12); color: var(--accent); }
+  .card-progress-badge.complete    { background: rgba(62,207,142,0.12); color: var(--green); }
+  .card-progress-badge.success     { background: rgba(62,207,142,0.15); color: var(--green); border: 1px solid rgba(62,207,142,0.3); }
+  .card-progress-badge.failure     { background: rgba(240,96,96,0.12); color: var(--red); border: 1px solid rgba(240,96,96,0.25); }
+  /* Subtask checkbox in card */
+  .card-subtask-check { width: 14px; height: 14px; border-radius: 3px; border: 1.5px solid var(--border2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; transition: all 0.15s; margin-left: auto; }
+  .card-subtask-check:hover { border-color: var(--green); }
+  .card-subtask-check.done { background: var(--green); border-color: var(--green); }
+
+  /* LIST */
+  .list-view { display: flex; flex-direction: column; gap: 4px; }
+  .list-group { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 12px; }
+  .list-group-header { padding: 13px 18px; display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; border-bottom: 1px solid var(--border); }
+  .list-group-header:hover { background: var(--bg3); }
+  .chevron { font-size: 12px; color: var(--text3); transition: transform 0.2s; }
+  .chevron.open { transform: rotate(90deg); }
+  .list-item { padding: 11px 18px; display: flex; align-items: flex-start; gap: 12px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
+  .list-item:last-child { border-bottom: none; }
+  .list-item:hover { background: rgba(255,255,255,0.02); }
+  .list-item.readonly { cursor: default; }
+  .list-item-check { width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid var(--border2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; cursor: pointer; transition: all 0.15s; }
+  .list-item-check:hover { border-color: var(--green); }
+  .list-item-check.done { background: var(--green); border-color: var(--green); }
+  .list-item-body { flex: 1; min-width: 0; }
+  .list-item-title { font-size: 13.5px; font-weight: 500; margin-bottom: 2px; }
+  .list-item-title.done { text-decoration: line-through; color: var(--text3); }
+  .list-item-desc { font-size: 12px; color: var(--text2); margin-bottom: 5px; }
+  .list-item-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .task-card.status-inprogress { border-left: 3px solid var(--accent); }
+  .task-card.status-waiting    { border-left: 3px solid var(--amber); }
+  .task-card.status-done       { border-left: 3px solid var(--green); opacity: 0.85; }
+  .task-card.status-todo       { border-left: 3px solid rgba(139,144,160,0.3); }
+  .card-subtasks { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.07); display: flex; flex-direction: column; gap: 3px; background: rgba(0,0,0,0.15); margin-left: -14px; margin-right: -14px; margin-bottom: -13px; padding: 8px 14px 10px 14px; border-radius: 0 0 var(--radius) var(--radius); }
+  .card-subtask-item { display: flex; align-items: center; gap: 7px; padding: 3px 0; }
+  .card-subtask-label { flex: 1; }
+  .card-subtask-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; border: 1.5px solid; }
+  .card-subtask-dot.done { background: var(--green); border-color: var(--green); }
+  .card-subtask-dot.todo { background: transparent; border-color: var(--text3); }
+  .card-subtask-label { font-size: 11.5px; color: var(--text2); line-height: 1.35; }
+  .card-subtask-label.done { text-decoration: line-through; color: var(--text3); }
+  .outcome-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; font-family: var(--font-mono); letter-spacing: 0.03em; }
+  .outcome-success { background: rgba(62,207,142,0.15); color: var(--green); border: 1px solid rgba(62,207,142,0.3); }
+  .outcome-failure { background: rgba(240,96,96,0.12); color: var(--red); border: 1px solid rgba(240,96,96,0.25); }
+  .subtask-row { display: flex; align-items: center; gap: 9px; padding: 6px 18px 6px 52px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.18); transition: background 0.1s; }
+  .subtask-row:last-child { border-bottom: none; border-radius: 0 0 var(--radius) var(--radius); }
+  .subtask-row:hover { background: rgba(0,0,0,0.28); }
+  .subtask-row::before { content: ""; display: block; width: 12px; height: 12px; border-left: 1.5px solid var(--border2); border-bottom: 1.5px solid var(--border2); border-radius: 0 0 0 3px; flex-shrink: 0; margin-right: -4px; margin-top: -6px; }
+  .subtask-check { width: 13px; height: 13px; border-radius: 3px; border: 1.5px solid var(--border2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; transition: all 0.15s; }
+  .subtask-check:hover { border-color: var(--green); }
+  .subtask-check.done { background: var(--green); border-color: var(--green); }
+  .subtask-title { font-size: 12px; color: var(--text2); }
+  .subtask-title.done { text-decoration: line-through; color: var(--text3); }
+  .list-item-expand { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; cursor: pointer; color: var(--text3); font-size: 10px; transition: transform 0.2s; border-radius: 4px; }
+  .list-item-expand:hover { color: var(--accent); background: rgba(108,143,255,0.1); }
+  .list-item-expand.open { transform: rotate(90deg); color: var(--accent); }
+  .list-item-expand-placeholder { width: 18px; height: 18px; flex-shrink: 0; }
+  .subtask-block { overflow: hidden; }
+  .subtask-block.collapsed { display: none; }
+  /* Subtask rows indented to align under task title (after triangle + checkbox) */
+  .subtask-row { display: flex; align-items: center; gap: 9px; padding: 6px 18px 6px 56px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.18); transition: background 0.1s; }
+  .subtask-row:last-child { border-bottom: none; }
+  .subtask-row:hover { background: rgba(0,0,0,0.28); }
+  .status-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .status-todo { background: rgba(139,144,160,0.15); color: var(--text2); }
+  .status-waiting { background: rgba(245,166,35,0.15); color: var(--amber); }
+  .status-inprogress { background: rgba(108,143,255,0.15); color: var(--accent); }
+  .status-done { background: rgba(62,207,142,0.12); color: var(--green); }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s; backdrop-filter: blur(4px); }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-lg); width: 560px; max-height: 85vh; overflow-y: auto; padding: 28px; transform: translateY(10px); transition: transform 0.2s; }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 24px; }
+  .modal-title { font-size: 18px; font-weight: 600; flex: 1; }
+  .modal-close { background: var(--bg4); border: none; color: var(--text2); width: 28px; height: 28px; border-radius: 7px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+  .modal-close:hover { background: var(--bg3); color: var(--text); }
+  .form-group { margin-bottom: 18px; }
+  .form-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text3); margin-bottom: 7px; display: block; }
+  .form-input, .form-textarea, .form-select { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-family: var(--font); font-size: 13.5px; padding: 9px 12px; outline: none; transition: border-color 0.15s; }
+  .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--accent); }
+  .form-textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+  .form-select option { background: var(--bg2); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .subtasks-editor { display: flex; flex-direction: column; gap: 6px; }
+  .subtask-edit-row { display: flex; gap: 7px; align-items: center; }
+  .subtask-edit-input { flex: 1; }
+  .btn-add-subtask { background: none; border: 1px dashed var(--border2); border-radius: var(--radius); padding: 7px 12px; color: var(--text2); font-family: var(--font); font-size: 12.5px; cursor: pointer; width: 100%; transition: all 0.15s; }
+  .btn-add-subtask:hover { border-color: var(--accent); color: var(--accent); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border); flex-wrap: wrap; align-items: center; }
+  .btn-cancel { padding: 9px 18px; border-radius: var(--radius); border: 1px solid var(--border2); background: none; color: var(--text2); font-family: var(--font); font-size: 13px; cursor: pointer; }
+  .btn-cancel:hover { background: var(--bg3); color: var(--text); }
+  .btn-save { padding: 9px 20px; border-radius: var(--radius); border: none; background: var(--accent); color: white; font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; }
+  .btn-save:hover { opacity: 0.85; }
+  .btn-delete { padding: 8px 14px; border-radius: var(--radius); border: 1px solid rgba(240,96,96,0.3); background: rgba(240,96,96,0.08); color: var(--red); font-family: var(--font); font-size: 13px; cursor: pointer; margin-right: auto; transition: all 0.15s; }
+  .btn-delete:hover { background: rgba(240,96,96,0.18); border-color: var(--red); }
+  .btn-archive-action { padding: 8px 14px; border-radius: var(--radius); border: 1px solid rgba(167,139,250,0.3); background: rgba(167,139,250,0.08); color: var(--archive); font-family: var(--font); font-size: 13px; cursor: pointer; transition: all 0.15s; }
+  .btn-archive-action:hover { background: rgba(167,139,250,0.18); border-color: var(--archive); }
+  .btn-restore-action { padding: 8px 14px; border-radius: var(--radius); border: 1px solid rgba(62,207,142,0.3); background: rgba(62,207,142,0.08); color: var(--green); font-family: var(--font); font-size: 13px; cursor: pointer; transition: all 0.15s; }
+  .btn-restore-action:hover { background: rgba(62,207,142,0.18); border-color: var(--green); }
+  .btn-archive-success { padding: 8px 14px; border-radius: var(--radius); border: 1px solid rgba(62,207,142,0.3); background: rgba(62,207,142,0.08); color: var(--green); font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .btn-archive-success:hover { background: rgba(62,207,142,0.2); border-color: var(--green); }
+  .btn-archive-failure { padding: 8px 14px; border-radius: var(--radius); border: 1px solid rgba(240,96,96,0.3); background: rgba(240,96,96,0.08); color: var(--red); font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .btn-archive-failure:hover { background: rgba(240,96,96,0.18); border-color: var(--red); }
+
+  /* AUTH */
+  .auth-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 200; flex-direction: column; gap: 24px; }
+  .auth-card { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 40px 44px; text-align: center; max-width: 440px; width: 100%; }
+  .auth-logo { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 8px; }
+  .auth-sub { font-size: 13px; color: var(--text2); margin-bottom: 32px; line-height: 1.6; }
+  .btn-google { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 13px; border-radius: var(--radius); background: white; color: #333; border: none; font-size: 14px; font-weight: 500; cursor: pointer; font-family: var(--font); transition: opacity 0.15s; }
+  .btn-google:hover { opacity: 0.9; }
+  .btn-google:disabled { opacity: 0.5; cursor: not-allowed; }
+  .auth-note { font-size: 11.5px; color: var(--text3); line-height: 1.7; max-width: 340px; text-align: center; }
+  .auth-status { font-size: 12px; color: var(--text3); margin-top: 12px; font-family: var(--font-mono); }
+
+  /* MISC */
+  .project-colors { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .color-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s; }
+  .color-swatch.selected { border-color: white; }
+  .sync-indicator { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text3); font-family: var(--font-mono); }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+  .sync-dot.syncing { animation: pulse 1s infinite; background: var(--amber); }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+  .empty { text-align: center; padding: 60px 20px; color: var(--text3); }
+  .empty-icon { font-size: 36px; margin-bottom: 12px; }
+  .notif { position: fixed; bottom: 24px; right: 24px; background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 12px 18px; font-size: 13px; z-index: 300; max-width: 320px; transform: translateY(10px); opacity: 0; transition: all 0.25s; pointer-events: none; display: flex; align-items: center; gap: 10px; }
+  .notif.show { transform: translateY(0); opacity: 1; }
+  .notif.success { border-left: 3px solid var(--green); }
+  .notif.error { border-left: 3px solid var(--red); }
+  .notif.info { border-left: 3px solid var(--accent); }
+  .confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.2s; backdrop-filter: blur(4px); }
+  .confirm-overlay.open { opacity: 1; pointer-events: all; }
+  .confirm-modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 28px; max-width: 400px; width: 90%; }
+  .confirm-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+  .confirm-body { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 24px; }
+  .confirm-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .btn-confirm-ok { padding: 9px 20px; border-radius: var(--radius); border: none; background: var(--red); color: white; font-family: var(--font); font-size: 13px; font-weight: 500; cursor: pointer; }
+  .btn-confirm-ok:hover { opacity: 0.85; }
+  .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.2); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .drag-handle { font-size: 13px; color: var(--text3); cursor: grab; opacity: 0; transition: opacity 0.15s; flex-shrink: 0; line-height: 1; }
+  .nav-item:hover .drag-handle { opacity: 1; }
+  .nav-item.dragging { opacity: 0.4; }
+  .nav-item.drag-over { background: rgba(108,143,255,0.1); border-radius: var(--radius); outline: 1px dashed rgba(108,143,255,0.4); }
+  .group-drop-zone { min-height: 32px; border-radius: var(--radius); transition: background 0.15s, outline 0.15s; }
+  .group-drop-zone.zone-over { background: rgba(108,143,255,0.07); outline: 1px dashed rgba(108,143,255,0.35); }
+  .group-selector { display: flex; gap: 6px; margin-top: 6px; }
+  .group-btn { flex: 1; padding: 7px 8px; border-radius: var(--radius); border: 1px solid var(--border2); background: none; color: var(--text2); font-family: var(--font); font-size: 12px; cursor: pointer; transition: all 0.15s; }
+  .group-btn:hover { background: var(--bg3); color: var(--text); }
+  .group-btn.selected { background: rgba(108,143,255,0.15); border-color: var(--accent); color: var(--accent); font-weight: 500; }
+  #outcomeBtnSuccess.selected { background: rgba(62,207,142,0.15); border-color: var(--green); color: var(--green); }
+  #outcomeBtnFailure.selected { background: rgba(240,96,96,0.12); border-color: var(--red); color: var(--red); }
+  #outcomeBtnNone.selected    { background: var(--bg3); border-color: var(--border2); color: var(--text2); }
+  .list-item-edit-btn { background: none; border: none; color: var(--text3); font-size: 13px; cursor: pointer; padding: 3px 5px; border-radius: 4px; opacity: 0; transition: opacity 0.15s, background 0.15s; flex-shrink: 0; }
+  .list-item:hover .list-item-edit-btn { opacity: 1; }
+  .list-item-edit-btn:hover { background: var(--bg4); color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="authScreen" class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">⬡ Dashboard</div>
+    <div class="auth-sub">Votre tableau de bord personnel synchronisé<br>avec Google Tasks.</div>
+    <button class="btn-google" id="btnSignIn" onclick="doLogin()">
+      <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/></svg>
+      Connexion avec Google
+    </button>
+    <div class="auth-status" id="authStatus"></div>
+  </div>
+  <div class="auth-note">Permissions : Google Tasks + Google Drive (appdata).<br>Aucune donnée envoyée à un serveur externe.</div>
+</div>
+
+<!-- APP -->
+<div class="app" id="appMain" style="display:none;">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand">
+        <div class="brand-dot" id="brandDot"></div>
+        <span id="brandLabel">Dashboard</span>
+      </div>
+    </div>
+
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tab-dashboard" onclick="switchMode('dashboard')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Projets
+      </button>
+      <button class="mode-tab archive-tab" id="tab-archive" onclick="switchMode('archive')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+        Archive
+      </button>
+    </div>
+
+    <!-- Dashboard sidebar -->
+    <div id="sidebar-dashboard" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Vue d'ensemble</div>
+        <div class="nav-item active" onclick="showOverview('lists')" id="nav-overview-lists">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Listes
+        </div>
+        <div class="nav-item" onclick="showOverview('objectives')" id="nav-overview-objectives">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          Objectifs
+        </div>
+        <div class="nav-item" onclick="showOverview('deadlines')" id="nav-overview-priorities">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Échéances
+        </div>
+      </div>
+      <div class="sidebar-section" style="flex:1;min-height:0;overflow-y:auto;">
+        <div class="sidebar-label">Listes</div>
+        <div class="sidebar-projects group-drop-zone" id="groupLists"
+          ondragover="onDragOver(event)"
+          ondragenter="onZoneEnter(event,'lists')"
+          ondragleave="onZoneLeave(event,'lists')"
+          ondrop="onDropZone(event,'lists')">
+        </div>
+        <div class="sidebar-label" style="margin-top:10px;">Objectifs</div>
+        <div class="sidebar-projects group-drop-zone" id="groupObjectives"
+          ondragover="onDragOver(event)"
+          ondragenter="onZoneEnter(event,'objectives')"
+          ondragleave="onZoneLeave(event,'objectives')"
+          ondrop="onDropZone(event,'objectives')">
+        </div>
+      </div>
+    </div>
+
+    <!-- Archive sidebar -->
+    <div id="sidebar-archive" style="display:none;flex-direction:column;flex:1;min-height:0;">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Vue d'ensemble</div>
+        <div class="nav-item archive-nav active" onclick="showArchiveOverview()" id="nav-archive-overview">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+          Tous les projets archivés
+        </div>
+      </div>
+      <div class="sidebar-section" style="flex:1;min-height:0;">
+        <div class="sidebar-label">Projets archivés</div>
+        <div class="sidebar-projects" id="archiveList"></div>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="btn-new-project" id="btnNewProject" onclick="openNewProject()">+ Nouveau projet</button>
+    </div>
+  </aside>
+
+  <main class="main" id="mainArea">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbarTitle">Tous les projets</div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:2px;">
+          <div class="sync-indicator"><div class="sync-dot" id="syncDot"></div><span id="syncLabel">Synchronisé</span></div>
+          <div style="font-size:12px;color:var(--text3);font-family:var(--font-mono);" id="taskCountLabel"></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-left:auto;">
+        <div class="view-switcher" id="viewSwitcher" style="display:none;">
+          <button class="view-btn active" onclick="setView('kanban')" id="vbtn-kanban">Kanban</button>
+          <button class="view-btn" onclick="setView('list')" id="vbtn-list">Liste</button>
+        </div>
+        <button class="btn-add-task" onclick="openAddTask()" id="btnAddTask" style="display:none;">+ Ajouter un objectif</button>
+        <button class="btn-icon" onclick="syncAll()" title="Synchroniser">↻</button>
+        <button class="btn-icon" id="btnDebug" onclick="debugTasks()" title="Debug structure" style="display:none;font-size:10px;opacity:0.5;">🔍</button>
+        <button class="btn-icon" onclick="doLogout()" title="Déconnexion" style="font-size:12px;">⏻</button>
+      </div>
+    </div>
+    <div class="content" id="mainContent"><div class="empty"><div class="empty-icon">🌀</div><div>Chargement…</div></div></div>
+  </main>
+</div>
+
+<!-- TASK MODAL -->
+<div class="modal-overlay" id="taskModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Nouvel objectif</div>
+      <button class="modal-close" onclick="closeTaskModal()">✕</button>
+    </div>
+    <div class="form-group"><label class="form-label">Titre</label><input type="text" class="form-input" id="taskTitle" placeholder="Ex: Finaliser le prototype"></div>
+    <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="taskDesc" placeholder="Contexte, détails…"></textarea></div>
+    <div class="form-group"><label class="form-label">Date d'échéance</label><input type="date" class="form-input" id="taskDate"></div>
+    <div class="form-group"><label class="form-label">Statut</label>
+      <select class="form-select" id="taskStatus" onchange="onStatusChange(this.value)">
+        <option value="todo">À faire</option><option value="waiting">En attente</option><option value="inprogress">En cours</option><option value="done">Terminé</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Actions (sous-tâches)</label>
+      <div class="subtasks-editor" id="subtasksEditor"></div>
+      <button class="btn-add-subtask" onclick="addSubtaskField()">+ Ajouter une action</button>
+    </div>
+    <div class="form-group" id="outcomeGroup" style="display:none;">
+      <label class="form-label">Résultat de l'objectif</label>
+      <div class="group-selector">
+        <button type="button" class="group-btn" id="outcomeBtnNone"    onclick="selectOutcome(null)">— Non défini</button>
+        <button type="button" class="group-btn" id="outcomeBtnSuccess" onclick="selectOutcome('success')">✓ Succès</button>
+        <button type="button" class="group-btn" id="outcomeBtnFailure" onclick="selectOutcome('failure')">✕ Échec</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-delete" id="btnDeleteTask" onclick="confirmDeleteTask()" style="display:none;">🗑 Supprimer</button>
+      <button class="btn-cancel" onclick="closeTaskModal()">Annuler</button>
+      <button class="btn-save" onclick="saveTask()" id="btnSaveTask">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECT MODAL -->
+<div class="modal-overlay" id="projectModal">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <div class="modal-title" id="projectModalTitle">Nouveau projet</div>
+      <button class="modal-close" onclick="closeProjectModal()">✕</button>
+    </div>
+    <div class="form-group"><label class="form-label">Nom du projet</label><input type="text" class="form-input" id="projectName" placeholder="Ex: Rénovation appartement"></div>
+    <div class="form-group" id="groupSelectorWrap"><label class="form-label">Section</label>
+  <div class="group-selector">
+    <button type="button" class="group-btn selected" id="groupBtnLists" onclick="selectGroup('lists')">📋 Listes</button>
+    <button type="button" class="group-btn" id="groupBtnObjectives" onclick="selectGroup('objectives')">🎯 Objectifs</button>
+  </div>
+</div>
+<div class="form-group"><label class="form-label">Couleur</label><div class="project-colors" id="projectColors"></div></div>
+    <div class="modal-actions">
+      <button class="btn-delete" id="btnModalDelete" onclick="_modalAction('delete')" style="display:none;">🗑 Supprimer</button>
+      <button class="btn-archive-success" id="btnModalArchiveSuccess" onclick="_modalAction('archive-success')" style="display:none;">🏆 Succès</button>
+      <button class="btn-archive-failure" id="btnModalArchiveFailure" onclick="_modalAction('archive-failure')" style="display:none;">✕ Échec</button>
+      <button class="btn-restore-action" id="btnModalRestore" onclick="_modalAction('restore')" style="display:none;">♻ Restaurer</button>
+      <button class="btn-delete" id="btnModalDeleteArchive" onclick="_modalAction('delete-archive')" style="display:none;">🗑 Supprimer</button>
+      <button class="btn-cancel" onclick="closeProjectModal()">Annuler</button>
+      <button class="btn-save" id="btnSaveProject" onclick="saveProject()">Créer</button>
+    </div>
+  </div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<!-- CONFIRM MODAL -->
+<div class="confirm-overlay" id="confirmModal">
+  <div class="confirm-modal">
+    <div class="confirm-title" id="confirmTitle">Confirmer</div>
+    <div class="confirm-body" id="confirmBody"></div>
+    <div class="confirm-actions">
+      <button class="btn-cancel" onclick="closeConfirm()">Annuler</button>
+      <button class="btn-confirm-ok" id="btnConfirmOk">Confirmer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════
+const CLIENT_ID = '862025356397-nrsn0qpr0e7225vhe52b0hen15plb38t.apps.googleusercontent.com';
+const SCOPES = 'https://www.googleapis.com/auth/tasks https://www.googleapis.com/auth/drive.appdata';
+const TASKS_API    = 'https://tasks.googleapis.com/tasks/v1';
+const DRIVE_API    = 'https://www.googleapis.com/drive/v3';
+const DRIVE_UPLOAD = 'https://www.googleapis.com/upload/drive/v3';
+const ARCHIVE_FILE = 'dashboard-archives.json';
+const COLORS = ['#6c8fff','#3ecf8e','#f5a623','#f06060','#a78bfa','#38bdf8','#fb7185','#34d399'];
+
+// ══════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════
+let accessToken  = localStorage.getItem('gtask_token') || null;
+let tokenExpiry  = parseInt(localStorage.getItem('gtask_expiry') || '0');
+let projects     = [];   // active Google Tasks lists
+let archives     = [];   // from Drive appdata
+let projectOrder = [];   // project sidebar order, stored in Drive
+let projectGroups = {};  // {projectId: 'lists'|'objectives'}, stored in Drive
+let driveFileId  = null; // Drive file id for archives
+
+let mode            = 'dashboard';  // 'dashboard' | 'archive'
+let currentOverview = 'lists';       // 'lists' | 'objectives' — active overview tab
+let currentId    = null;          // selected project/archive id
+let currentView  = 'kanban';
+let editingTaskId     = null;
+let editingProjectId  = null;
+let selectedColor     = COLORS[0];
+let modalProjectId    = null;     // null = new; id = edit
+let modalIsArchive    = false;    // editing an archive entry
+
+// ══════════════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════════════
+function doLogin() {
+  const p = new URLSearchParams({
+    client_id: CLIENT_ID,
+    redirect_uri: location.origin+location.pathname,
+    response_type: 'token',
+    scope: SCOPES,
+    include_granted_scopes: 'true',
+    prompt: 'consent',          // ← force Google to show full consent screen
+    state: 'dashboard_auth'
+  });
+  location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + p;
+}
+function doLogout() {
+  localStorage.removeItem('gtask_token'); localStorage.removeItem('gtask_expiry');
+  accessToken = null;
+  document.getElementById('appMain').style.display = 'none';
+  document.getElementById('authScreen').style.display = 'flex';
+}
+function checkTokenInUrl() {
+  const hash = window.location.hash.substring(1); if (!hash) return false;
+  const p = new URLSearchParams(hash);
+  const token = p.get('access_token'), exp = p.get('expires_in'), state = p.get('state');
+  if (token && state === 'dashboard_auth') {
+    accessToken = token; tokenExpiry = Date.now() + parseInt(exp)*1000;
+    localStorage.setItem('gtask_token', token); localStorage.setItem('gtask_expiry', tokenExpiry+'');
+    history.replaceState(null,'',location.pathname); return true;
+  }
+  return false;
+}
+function isTokenValid() { return accessToken && Date.now() < tokenExpiry - 60000; }
+
+// ══════════════════════════════════════════════════════
+// API
+// ══════════════════════════════════════════════════════
+async function apiCall(url, opts={}) {
+  const r = await fetch(TASKS_API+url, { ...opts, headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json',...(opts.headers||{})} });
+  if (r.status===401) { doLogout(); throw new Error('Token expiré'); }
+  if (r.status===204) return null;
+  return r.json();
+}
+async function driveReq(url, opts={}) {
+  const r = await fetch(url, { ...opts, headers:{'Authorization':'Bearer '+accessToken,...(opts.headers||{})} });
+  if (r.status===401) { doLogout(); throw new Error('Token expiré'); }
+  if (r.status===204||r.status===200&&opts.noJson) return null;
+  return r.json();
+}
+
+// ══════════════════════════════════════════════════════
+// DRIVE — archives storage
+// ══════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════
+// DRIVE — archives storage (Drive-only, no localStorage fallback)
+// ══════════════════════════════════════════════════════
+
+async function checkDriveScope() {
+  try {
+    const r = await fetch(`${DRIVE_API}/files?spaces=appDataFolder&pageSize=1&fields=files(id)`, {
+      headers: { 'Authorization': 'Bearer ' + accessToken }
+    });
+    return r.ok; // false on 401/403
+  } catch(e) { return false; }
+}
+
+// Load archives from Drive. Returns true on success, false on failure.
+async function driveLoad() {
+  try {
+    const res = await fetch(
+      `${DRIVE_API}/files?spaces=appDataFolder&q=name%3D%27${ARCHIVE_FILE}%27&fields=files(id)`,
+      { headers: { 'Authorization': 'Bearer ' + accessToken } }
+    );
+    if (!res.ok) {
+      console.warn('driveLoad: search failed', res.status);
+      archives = []; projectOrder = []; projectGroups = {};
+      return false;
+    }
+    const data = await res.json();
+    const files = (data.files || []);
+    if (!files.length) {
+      driveFileId = null;
+      archives = []; projectOrder = []; projectGroups = {};
+      return true; // Drive accessible, file just doesn't exist yet
+    }
+    driveFileId = files[0].id;
+    const fr = await fetch(`${DRIVE_API}/files/${driveFileId}?alt=media`, {
+      headers: { 'Authorization': 'Bearer ' + accessToken }
+    });
+    if (!fr.ok) {
+      console.warn('driveLoad: file read failed', fr.status);
+      archives = []; projectOrder = []; projectGroups = {};
+      return false;
+    }
+    const payload = await fr.json();
+    // Support both old format (plain array) and new format ({archives, projectOrder})
+    if (Array.isArray(payload)) {
+      archives     = payload;
+      projectOrder = [];
+      projectGroups = {};
+    } else {
+      archives     = Array.isArray(payload.archives)     ? payload.archives     : [];
+      projectOrder = Array.isArray(payload.projectOrder) ? payload.projectOrder : [];
+      projectGroups = (payload.projectGroups && typeof payload.projectGroups === 'object') ? payload.projectGroups : {};
+    }
+    return true;
+  } catch(e) {
+    console.warn('driveLoad error:', e.message);
+    archives = []; projectOrder = []; projectGroups = {};
+    return false;
+  }
+}
+
+// Save archives to Drive. Returns true on success, throws on failure.
+async function driveSave() {
+  const body = JSON.stringify({ archives, projectOrder, projectGroups });
+  if (driveFileId) {
+    const r = await fetch(`${DRIVE_UPLOAD}/files/${driveFileId}?uploadType=media`, {
+      method: 'PATCH',
+      headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+      body
+    });
+    if (r.status === 404) {
+      // File was deleted externally — recreate it
+      driveFileId = null;
+      return driveSave();
+    }
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      throw new Error(`Drive PATCH ${r.status}: ${err.error?.message || 'unknown'}`);
+    }
+  } else {
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify({ name: ARCHIVE_FILE, parents: ['appDataFolder'] })], { type: 'application/json' }));
+    form.append('file', new Blob([body], { type: 'application/json' }));
+    const r = await fetch(`${DRIVE_UPLOAD}/files?uploadType=multipart&fields=id`, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + accessToken },
+      body: form
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      throw new Error(`Drive POST ${r.status}: ${err.error?.message || 'unknown'}`);
+    }
+    const j = await r.json();
+    if (!j.id) throw new Error('Drive: no file id returned');
+    driveFileId = j.id;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// SYNC
+// ══════════════════════════════════════════════════════
+async function syncAll() {
+  setSyncing(true);
+  try {
+    const data = await apiCall('/users/@me/lists?maxResults=100');
+    const lists = (data.items||[]).filter(l=>l.title!=='My Tasks'&&l.title!=='Mes tâches');
+    projects = [];
+    for (const list of lists) {
+      const color = getColor(list.id);
+      const tData = await apiCall(`/lists/${list.id}/tasks?maxResults=100&showCompleted=true&showHidden=true`);
+      const raw = tData.items||[];
+      const tasks = raw.filter(t=>!t.parent).map(t=>parseTask(t,raw,list.id));
+      projects.push({id:list.id, title:list.title, color, tasks});
+    }
+    await driveLoad();
+    renderSidebar(); renderMain();
+    setSyncing(false); showNotif('Synchronisé ✓','success');
+  } catch(e) { setSyncing(false); showNotif('Erreur : '+e.message,'error'); console.error(e); }
+}
+
+function parseTask(t, all, listId) {
+  const meta = parseMeta(t.notes||'');
+  const subtasks = all.filter(s=>s.parent===t.id).map(s=>({id:s.id,title:s.title,done:s.status==='completed',listId}));
+  return { id:t.id, listId, title:t.title||'', description:meta.desc||'',
+    status:t.status==='completed'?'done':(meta.status||'todo'),
+    outcome:meta.outcome||null,
+    due:t.due?t.due.split('T')[0]:'', subtasks };
+}
+function parseMeta(n) {
+  try { const m=n.match(/<!--DASH:(.*?)-->/s); if(m) return JSON.parse(m[1]); } catch(e) {}
+  return { desc: n };
+}
+function buildNotes(t) { const o={}; if(t.status)o.status=t.status; if(t.description)o.desc=t.description; if(t.outcome)o.outcome=t.outcome; const v=t.description?t.description+'\n\n':''; return v+`<!--DASH:${JSON.stringify(o)}-->`; }
+function getColor(id) { const s=JSON.parse(localStorage.getItem('project_colors')||'{}'); return s[id]||COLORS[Math.abs(hashStr(id))%COLORS.length]; }
+function setColor(id,c) { const s=JSON.parse(localStorage.getItem('project_colors')||'{}'); s[id]=c; localStorage.setItem('project_colors',JSON.stringify(s)); }
+function hashStr(s) { let h=0;for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;return h; }
+
+// ══════════════════════════════════════════════════════
+// PROJECT ORDER (Drive — stored in dashboard-archives.json)
+// ══════════════════════════════════════════════════════
+function removeProjectFromOrder(id) {
+  projectOrder = projectOrder.filter(x => x !== id);
+  delete projectGroups[id];
+  // persist silently — fire-and-forget, non-blocking
+  if (driveReady) driveSave().catch(e => console.warn('order save failed:', e));
+}
+async function saveProjectOrder(ids) {
+  projectOrder = ids;
+  if (driveReady) await driveSave();
+}
+function getGroup(id) { return projectGroups[id] || 'lists'; }
+function setGroup(id, g) { projectGroups[id] = g; }
+function sortedProjects() {
+  if (!projectOrder.length) return projects;
+  const indexed = projects.filter(p => projectOrder.includes(p.id))
+    .sort((a,b) => projectOrder.indexOf(a.id) - projectOrder.indexOf(b.id));
+  const rest = projects.filter(p => !projectOrder.includes(p.id));
+  return [...indexed, ...rest];
+}
+function projectsByGroup(g) { return sortedProjects().filter(p => getGroup(p.id) === g); }
+
+
+
+// ══════════════════════════════════════════════════════
+// ARCHIVE / RESTORE
+// ══════════════════════════════════════════════════════
+async function doArchive(projectId, outcome='success') {
+  if (!driveReady) {
+    showNotif('Drive inaccessible — reconnectez-vous (⏻)', 'error');
+    return;
+  }
+  const p = projects.find(x => x.id === projectId); if (!p) return;
+  setSyncing(true);
+
+  const snap = {
+    id: 'arch_' + Date.now(),
+    title: p.title,
+    color: p.color,
+    outcome: outcome,
+    archivedAt: new Date().toISOString(),
+    tasks: JSON.parse(JSON.stringify(p.tasks))
+  };
+
+  // STEP 1 — Save to Drive FIRST. If this fails, stop everything.
+  archives.push(snap);
+  try {
+    await driveSave();
+  } catch(e) {
+    // Rollback in-memory archives and abort — project stays in Dashboard
+    archives = archives.filter(x => x.id !== snap.id);
+    setSyncing(false);
+    showNotif('Échec Drive — projet NON archivé, il reste dans Dashboard. (' + e.message + ')', 'error');
+    console.error('doArchive driveSave failed:', e);
+    return;
+  }
+
+  // STEP 2 — Drive confirmed. Now delete from Google Tasks.
+  try {
+    await apiCall(`/users/@me/lists/${projectId}`, { method: 'DELETE' });
+  } catch(e) {
+    // Tasks delete failed but Drive already has the archive.
+    // Reload Tasks list — project may still appear, user can retry.
+    setSyncing(false);
+    showNotif('Archive Drive OK, mais suppression Tasks échouée. Réessayez.', 'error');
+    await reloadTasksOnly();
+    renderSidebar(); renderMain();
+    return;
+  }
+
+  if (currentId === projectId) currentId = null;
+
+  // STEP 3 — Reload Tasks list only (not driveLoad — archives already correct in memory)
+  await reloadTasksOnly();
+  if (mode === 'dashboard' && !currentId) showOverview();
+  renderSidebar(); renderMain();
+  setSyncing(false);
+  showNotif(`"${p.title}" archivé ✓`, 'success');
+}
+
+// Reload only Google Tasks lists without touching archives
+async function reloadTasksOnly() {
+  const data = await apiCall('/users/@me/lists?maxResults=100');
+  const lists = (data.items || []).filter(l => l.title !== 'My Tasks' && l.title !== 'Mes tâches');
+  projects = [];
+  for (const list of lists) {
+    const color = getColor(list.id);
+    const tData = await apiCall(`/lists/${list.id}/tasks?maxResults=100&showCompleted=true&showHidden=true`);
+    const raw = tData.items || [];
+    const tasks = raw.filter(t => !t.parent).map(t => parseTask(t, raw, list.id));
+    projects.push({ id: list.id, title: list.title, color, tasks });
+  }
+}
+
+async function doRestore(archiveId) {
+  const a = archives.find(x=>x.id===archiveId); if(!a) return;
+  setSyncing(true);
+  try {
+    const list = await apiCall('/users/@me/lists',{method:'POST',body:JSON.stringify({title:a.title})});
+    setColor(list.id, a.color);
+    for (const t of a.tasks) {
+      const notes = buildNotes(t);
+      const body = {title:t.title,notes,status:t.status==='done'?'completed':'needsAction'};
+      if (t.due) body.due = t.due+'T00:00:00.000Z';
+      const created = await apiCall(`/lists/${list.id}/tasks`,{method:'POST',body:JSON.stringify(body)});
+      for (const s of t.subtasks||[]) {
+        await apiCall(`/lists/${list.id}/tasks`,{method:'POST',body:JSON.stringify({title:s.title,parent:created.id,status:s.done?'completed':'needsAction'})});
+      }
+    }
+    archives = archives.filter(x=>x.id!==archiveId);
+    await driveSave();
+    switchMode('dashboard');
+    await syncAll();
+    const restored = projects.find(x=>x.title===a.title);
+    if (restored) showProject(restored.id);
+    showNotif(`"${a.title}" restauré ✓`,'success');
+  } catch(e) { setSyncing(false); showNotif('Erreur : '+e.message,'error'); }
+}
+
+// ══════════════════════════════════════════════════════
+// MODE
+// ══════════════════════════════════════════════════════
+function switchMode(m) {
+  mode = m; currentId = null;
+  const isDash = m === 'dashboard';
+  document.getElementById('tab-dashboard').classList.toggle('active', isDash);
+  document.getElementById('tab-archive').classList.toggle('active', !isDash);
+  document.getElementById('sidebar-dashboard').style.display = isDash ? 'flex' : 'none';
+  document.getElementById('sidebar-archive').style.display  = isDash ? 'none' : 'flex';
+  document.getElementById('mainArea').classList.toggle('archive-mode', !isDash);
+  document.getElementById('btnAddTask').style.display = 'none';
+  document.getElementById('btnNewProject').style.display = isDash ? '' : 'none';
+  const dot = document.getElementById('brandDot');
+  dot.style.background  = isDash ? 'var(--accent)' : 'var(--archive)';
+  dot.style.boxShadow   = isDash ? '0 0 8px var(--accent)' : '0 0 8px var(--archive)';
+  document.getElementById('brandLabel').textContent = isDash ? 'Dashboard' : 'Archive';
+  if (isDash) showOverview(currentOverview); else showArchiveOverview();
+}
+
+// ══════════════════════════════════════════════════════
+// SIDEBAR
+// ══════════════════════════════════════════════════════
+function _projectNavItem(p) {
+  const done = p.tasks.filter(t=>t.status==='done').length;
+  return `<div class="nav-item ${mode==='dashboard'&&currentId===p.id?'active':''}" onclick="showProject('${p.id}')"
+      draggable="true" data-pid="${p.id}" data-group="${getGroup(p.id)}"
+      ondragstart="onDragStart(event,'${p.id}')"
+      ondragover="onDragOver(event)"
+      ondragenter="onDragEnter(event)"
+      ondragleave="onDragLeave(event)"
+      ondrop="onDrop(event,'${p.id}')"
+      ondragend="onDragEnd(event)">
+      <span class="drag-handle" title="Déplacer">⠿</span>
+      <div class="dot" style="background:${p.color};box-shadow:0 0 5px ${p.color};"></div>
+      <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(p.title)}</span>
+      <div class="nav-item-actions">
+        <button class="btn-edit-project" onclick="event.stopPropagation();openEditProject('${p.id}')" title="Modifier">🖉</button>
+        <button class="btn-del-project"  onclick="event.stopPropagation();confirmDeleteProject('${p.id}')" title="Supprimer">✕</button>
+      </div>
+    </div>`;
+}
+function renderSidebar() {
+  const listsProjects      = projectsByGroup('lists');
+  const objectivesProjects = projectsByGroup('objectives');
+  const empty = '<div style="padding:6px 10px;font-size:11px;color:var(--text3);font-style:italic;">Déposer ici</div>';
+  document.getElementById('groupLists').innerHTML      = listsProjects.length      ? listsProjects.map(_projectNavItem).join('')      : empty;
+  document.getElementById('groupObjectives').innerHTML = objectivesProjects.length ? objectivesProjects.map(_projectNavItem).join('') : empty;
+
+  document.getElementById('archiveList').innerHTML = !archives.length
+    ? '<div style="padding:8px 10px;font-size:12px;color:var(--text3);">Aucun projet archivé</div>'
+    : archives.map(a => {
+      const isSuccess = a.outcome !== 'failure';
+      const outcomeIcon = isSuccess ? '🏆' : '✕';
+      const outcomeStyle = isSuccess ? 'color:var(--amber);' : 'color:var(--red);';
+      return `<div class="nav-item archive-nav ${mode==='archive'&&currentId===a.id?'active':''}" onclick="showArchiveProject('${a.id}')">
+        <span style="font-size:12px;flex-shrink:0;${outcomeStyle}">${outcomeIcon}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(a.title)}</span>
+        <div class="nav-item-actions">
+          <button class="btn-edit-project" onclick="event.stopPropagation();openEditArchive('${a.id}')" title="Modifier">🖉</button>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// NAV
+// ══════════════════════════════════════════════════════
+function showOverview(group) {
+  currentId = null;
+  if (group) currentOverview = group;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('nav-overview-lists').classList.toggle('active', currentOverview === 'lists');
+  document.getElementById('nav-overview-objectives').classList.toggle('active', currentOverview === 'objectives');
+  document.getElementById('nav-overview-priorities').classList.toggle('active', currentOverview === 'deadlines');
+  const labels = {lists:'📋 Listes', objectives:'🎯 Objectifs', deadlines:'📅 Échéances'};
+  document.getElementById('topbarTitle').textContent = labels[currentOverview] || '';
+  document.getElementById('btnAddTask').style.display = 'none';
+  document.getElementById('viewSwitcher').style.display = 'none';
+  renderMain();
+}
+function showProject(id) {
+  mode='dashboard'; currentId=id;
+  const p=projects.find(x=>x.id===id);
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  renderSidebar();
+  document.getElementById('topbarTitle').textContent=p?p.title:'';
+  document.getElementById('btnAddTask').style.display='flex';
+  document.getElementById('viewSwitcher').style.display='';
+  document.getElementById('btnDebug').style.display='';
+  renderMain();
+}
+function showArchiveOverview() {
+  currentId = null;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('nav-archive-overview').classList.add('active');
+  document.getElementById('topbarTitle').textContent = 'Tous les projets archivés';
+  document.getElementById('btnAddTask').style.display = 'none';
+  document.getElementById('viewSwitcher').style.display = 'none';
+  renderMain();
+}
+function showArchiveProject(id) {
+  mode='archive'; currentId=id;
+  const a=archives.find(x=>x.id===id);
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  renderSidebar();
+  document.getElementById('topbarTitle').textContent=a?'📦 '+a.title:'';
+  document.getElementById('btnAddTask').style.display = 'none';
+  document.getElementById('viewSwitcher').style.display = 'none';
+  renderMain();
+}
+function setView(v) {
+  currentView=v;
+  document.getElementById('vbtn-kanban').classList.toggle('active',v==='kanban');
+  document.getElementById('vbtn-list').classList.toggle('active',v==='list');
+  renderMain();
+}
+
+// ══════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════
+function renderMain() {
+  const c=document.getElementById('mainContent');
+  if (mode==='archive') {
+    if (currentId) {
+      const a=archives.find(x=>x.id===currentId); if(!a) return;
+      const sub=a.tasks.reduce((s,t)=>s+(t.subtasks||[]).length,0);
+      document.getElementById('taskCountLabel').textContent=`${a.tasks.length} objectifs · ${sub} actions · archivé le ${fmt(a.archivedAt.split('T')[0])}`;
+      c.innerHTML=currentView==='kanban'?renderKanban(a,true):renderList(a,true);
+    } else {
+      document.getElementById('taskCountLabel').textContent=`${archives.length} projets`;
+      c.innerHTML=renderArchiveOverview();
+    }
+    return;
+  }
+  if (currentId) {
+    const p=projects.find(x=>x.id===currentId); if(!p) return;
+    const sub=p.tasks.reduce((s,t)=>s+t.subtasks.length,0);
+    document.getElementById('taskCountLabel').textContent=`${p.tasks.length} objectifs · ${sub} actions`;
+    c.innerHTML=currentView==='kanban'?renderKanban(p):renderList(p);
+  } else if (currentOverview === 'deadlines') {
+    const allTasks = projects.flatMap(p => p.tasks.filter(t => t.status !== 'done'));
+    document.getElementById('taskCountLabel').textContent = `${allTasks.length} objectif${allTasks.length!==1?'s':''} en cours`;
+    c.innerHTML = renderDeadlinesOverview(allTasks);
+  } else {
+    const gp = projectsByGroup(currentOverview);
+    document.getElementById('taskCountLabel').textContent = `${gp.length} projet${gp.length!==1?'s':''}`;
+    c.innerHTML = renderOverview(currentOverview);
+  }
+}
+
+function renderKanban(p, ro=false) {
+  const cols=[{key:'todo',label:'À faire',cls:'col-todo'},{key:'waiting',label:'En attente',cls:'col-waiting'},{key:'inprogress',label:'En cours',cls:'col-inprogress'},{key:'done',label:'Terminé',cls:'col-done'}];
+  return `<div class="kanban">${cols.map(col=>{
+    const tasks=p.tasks.filter(t=>t.status===col.key);
+    return `<div class="kanban-col ${col.cls}">
+      <div class="kanban-col-header"><span class="col-badge">${col.label}</span><span class="col-count">${tasks.length}</span></div>
+      <div class="kanban-cards">${tasks.length?tasks.map(t=>card(t,ro)).join(''):'<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px;">Vide</div>'}</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function card(t, ro=false) {
+  const sub=(t.subtasks||[]),sdone=sub.filter(s=>s.done).length,pct=sub.length?Math.round(sdone/sub.length*100):0;
+  const ov=t.due&&t.due<new Date().toISOString().split('T')[0]&&t.status!=='done';
+  const clk=ro?'':` onclick="openEditTask('${t.listId}','${t.id}')"`;
+  let progressBadge = '';
+  if (t.status === 'done') {
+    if (t.outcome === 'success')      progressBadge = `<span class="card-progress-badge success">✓ Succès</span>`;
+    else if (t.outcome === 'failure') progressBadge = `<span class="card-progress-badge failure">✕ Échec</span>`;
+    else                              progressBadge = `<span class="card-progress-badge complete">100 %</span>`;
+  } else if (sub.length) {
+    progressBadge = `<span class="card-progress-badge in-progress">${pct} %</span>`;
+  }
+  const subHtml=sub.length?`
+    <div class="card-subtasks">
+      ${sub.map(s=>`<div class="card-subtask-item">
+        <div class="card-subtask-dot ${s.done?'done':'todo'}"></div>
+        <span class="card-subtask-label ${s.done?'done':''}">${esc(s.title)}</span>
+        ${ro?'':`<div class="card-subtask-check ${s.done?'done':''}" onclick="event.stopPropagation();toggleSubtask('${t.listId}','${t.id}','${s.id}')" title="${s.done?'Marquer comme non fait':'Marquer comme fait'}">${s.done?`<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`:''}</div>`}
+      </div>`).join('')}
+    </div>`:'';
+  return `<div class="task-card status-${t.status}${ro?' readonly':''}"${clk}>
+    <div class="task-card-header">
+      <span class="task-card-icon">🎯</span>
+      <div class="task-card-title ${t.status==='done'?'done':''}">${esc(t.title)}</div>
+      ${progressBadge}
+    </div>
+    ${t.description?`<div class="task-card-desc">${esc(t.description)}</div>`:''}
+    <div class="task-card-footer">
+      ${t.due?`<span class="task-date ${ov?'overdue':''}">${ov?'⚠ ':''}${fmt(t.due)}</span>`:''}
+    </div>
+    ${subHtml}
+  </div>`;
+}
+
+function renderList(p, ro=false) {
+  if (!p.tasks.length) return '<div class="empty"><div class="empty-icon">🎯</div><div>Aucun objectif.</div></div>';
+  const groups=[{key:'inprogress',label:'En cours'},{key:'waiting',label:'En attente'},{key:'todo',label:'À faire'},{key:'done',label:'Terminé'}];
+  return `<div class="list-view">${groups.map(g=>{
+    const tasks=p.tasks.filter(t=>t.status===g.key); if(!tasks.length) return '';
+    return `<div class="list-group">
+      <div class="list-group-header" onclick="toggleGroup(this)">
+        <span class="status-badge status-${g.key}">${g.label}</span><span style="flex:1;"></span>
+        <span style="font-size:11px;color:var(--text3);">${tasks.length}</span>
+        <span class="chevron open">▶</span>
+      </div>
+      <div class="list-group-body">${tasks.map(t=>listItem(t,ro)).join('')}</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function listItem(t, ro=false) {
+  const sub=(t.subtasks||[]),done=sub.filter(s=>s.done).length;
+  const ov=t.due&&t.due<new Date().toISOString().split('T')[0]&&t.status!=='done';
+  const isDone=t.status==='done';
+  const chk=ro?'':` onclick="event.stopPropagation();toggleTask('${t.listId}','${t.id}')"`;
+  const editBtn = !ro ? `<button class="list-item-edit-btn" onclick="event.stopPropagation();openEditTask('${t.listId}','${t.id}')" title="Modifier l'objectif">🖉</button>` : '';
+  const outcomeBadge = t.outcome==='success' ? `<span class="outcome-badge outcome-success">✓ Succès</span>` : t.outcome==='failure' ? `<span class="outcome-badge outcome-failure">✕ Échec</span>` : '';
+  const triangle = sub.length && !ro ? `<span class="list-item-expand" id="exp-${t.id}" onclick="event.stopPropagation();toggleSubtasks('${t.id}')">▶</span>` : `<span class="list-item-expand-placeholder"></span>`;
+  const rowClk = ro ? '' : ` onclick="openEditTask('${t.listId}','${t.id}')"`;
+  return `<div class="list-item${ro?' readonly':''}"${rowClk}>
+    ${triangle}
+    <div class="list-item-check ${isDone?'done':''}"${chk}>${isDone?`<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`:''}</div>
+    <div class="list-item-body">
+      <div class="list-item-title ${isDone?'done':''}">${esc(t.title)}</div>
+      ${t.description?`<div class="list-item-desc">${esc(t.description)}</div>`:''}
+      <div class="list-item-meta">
+        ${outcomeBadge}
+        ${sub.length?`<span style="font-size:11px;color:var(--text2);">${done}/${sub.length} actions</span>`:''}
+        ${t.due?`<span class="task-date ${ov?'overdue':''}">${ov?'⚠ ':''}${fmt(t.due)}</span>`:''}
+      </div>
+    </div>
+    ${editBtn}
+  </div>
+  <div class="subtask-block collapsed" id="sub-${t.id}">
+  ${sub.map(s=>`<div class="subtask-row">
+    <div class="subtask-check ${s.done?'done':''}">${s.done?`<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`:''}</div>
+    <span class="subtask-title ${s.done?'done':''}">${esc(s.title)}</span>
+  </div>`).join('')}
+  </div>`;
+}
+
+function pctColor(pct) { return `hsl(${Math.round(pct*1.2)},85%,48%)`; }
+
+function renderOverview(group) {
+  const list = projectsByGroup(group || 'lists');
+  const label = group === 'objectives' ? 'objectifs' : 'listes';
+  if (!list.length) return `<div class="empty"><div class="empty-icon">${group==='objectives'?'🎯':'📋'}</div><div>Aucune ${label}.<br>Créez un nouveau projet et assignez-le à <strong>${group==='objectives'?'Objectifs':'Listes'}</strong>.</div></div>`;
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;">${list.map(p=>{
+    const done=p.tasks.filter(t=>t.status==='done').length, inprog=p.tasks.filter(t=>t.status==='inprogress').length,
+          waiting=p.tasks.filter(t=>t.status==='waiting').length, pct=p.tasks.length?Math.round(done/p.tasks.length*100):0,
+          sub=p.tasks.reduce((a,t)=>a+(t.subtasks||[]).length,0);
+    const barColor = pctColor(pct);
+    return `<div class="task-card" onclick="showProject('${p.id}')">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:${p.color};box-shadow:0 0 6px ${p.color};flex-shrink:0;"></div>
+        <div style="font-size:14px;font-weight:600;flex:1;">${esc(p.title)}</div>
+        <div style="font-size:28px;font-weight:700;font-family:var(--font-mono);color:${barColor};letter-spacing:-1px;">${pct}%</div>
+      </div>
+      <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+        <div><div style="font-size:20px;font-weight:600;">${p.tasks.length}</div><div style="font-size:11px;color:var(--text3);">objectifs</div></div>
+        <div><div style="font-size:20px;font-weight:600;color:var(--accent);">${inprog}</div><div style="font-size:11px;color:var(--text3);">en cours</div></div>
+        <div><div style="font-size:20px;font-weight:600;color:var(--amber);">${waiting}</div><div style="font-size:11px;color:var(--text3);">en attente</div></div>
+        <div><div style="font-size:20px;font-weight:600;color:var(--green);">${done}</div><div style="font-size:11px;color:var(--text3);">terminés</div></div>
+        <div><div style="font-size:20px;font-weight:600;color:var(--text2);">${sub}</div><div style="font-size:11px;color:var(--text3);">actions</div></div>
+      </div>
+      <div class="progress-mini" style="height:6px;background:var(--bg4);border-radius:3px;overflow:hidden;">
+        <div style="width:${pct}%;height:100%;border-radius:3px;background:${barColor};transition:width 0.4s ease;"></div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderDeadlinesOverview(tasks) {
+  if (!tasks.length) return '<div class="empty"><div class="empty-icon">📅</div><div>Aucun objectif en cours.</div></div>';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dayMs = 86400000;
+  function daysUntil(due) { const d=new Date(due); d.setHours(0,0,0,0); return Math.round((d-today)/dayMs); }
+  const buckets = [
+    { key:'overdue',   label:'🔴 En retard',   color:'var(--red)',    items:[] },
+    { key:'d3',        label:'🟠 J-3',          color:'var(--amber)',  items:[] },
+    { key:'d7',        label:'🟡 J-7',          color:'#f5c842',      items:[] },
+    { key:'d15',       label:'🔵 J-15',         color:'var(--accent)', items:[] },
+    { key:'unplanned', label:'⬜ Non planifié', color:'var(--text3)', items:[] },
+  ];
+  for (const t of tasks) {
+    if (!t.due) { buckets[4].items.push(t); continue; }
+    const d = daysUntil(t.due);
+    if      (d < 0)   buckets[0].items.push({...t,_days:d});
+    else if (d <= 3)  buckets[1].items.push({...t,_days:d});
+    else if (d <= 7)  buckets[2].items.push({...t,_days:d});
+    else if (d <= 15) buckets[3].items.push({...t,_days:d});
+    else              buckets[4].items.push(t);
+  }
+  for (let i=0;i<4;i++) buckets[i].items.sort((a,b)=>(a.due||'').localeCompare(b.due||''));
+  const bucketHtml = buckets.map(b => {
+    if (!b.items.length) return '';
+    const rows = b.items.map(t => {
+      const proj=projects.find(p=>p.id===t.listId);
+      const sub=(t.subtasks||[]),sdone=sub.filter(s=>s.done).length;
+      const pct=sub.length?Math.round(sdone/sub.length*100):null;
+      const statusLabels={todo:'À faire',waiting:'En attente',inprogress:'En cours'};
+      const statusColors={todo:'var(--text3)',waiting:'var(--amber)',inprogress:'var(--accent)'};
+      const daysLabel=t.due?(t._days<0?`⚠ ${Math.abs(t._days)}j de retard`:t._days===0?"Aujourd'hui":t._days===1?"Demain":`J-${t._days}`):'';
+      return `<div style="padding:11px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;cursor:pointer;transition:background 0.1s;"
+        onclick="showProject('${t.listId}')"
+        onmouseover="this.style.background='rgba(255,255,255,0.025)'"
+        onmouseout="this.style.background=''">
+        <div style="width:3px;min-height:36px;border-radius:2px;background:${b.color};flex-shrink:0;align-self:stretch;"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(t.title)}</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:3px;flex-wrap:wrap;">
+            ${proj?`<span style="font-size:11px;color:var(--text3);">${esc(proj.title)}</span>`:''}
+            <span style="font-size:11px;font-weight:500;color:${statusColors[t.status]||'var(--text3)'};">${statusLabels[t.status]||''}</span>
+            ${sub.length?`<span style="font-size:11px;color:var(--text3);">${sdone}/${sub.length} actions</span>`:''}
+          </div>
+        </div>
+        ${pct!==null?`<span style="font-size:12px;font-family:var(--font-mono);color:var(--text2);">${pct}%</span>`:''}
+        <div style="text-align:right;flex-shrink:0;">
+          ${t.due?`<div style="font-size:12px;font-family:var(--font-mono);color:${b.key==='overdue'?'var(--red)':'var(--text2)'};">${fmt(t.due)}</div>`:''}
+          ${daysLabel?`<div style="font-size:11px;color:${b.key==='overdue'?'var(--red)':'var(--text3)'};">${daysLabel}</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+    return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:14px;">
+      <div style="padding:11px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--bg3);">
+        <span style="font-size:13px;font-weight:600;color:${b.color};">${b.label}</span>
+        <span style="font-size:11px;color:var(--text3);margin-left:auto;">${b.items.length} objectif${b.items.length!==1?'s':''}</span>
+      </div>
+      ${rows}
+    </div>`;
+  }).join('');
+  return `<div style="display:flex;flex-direction:column;">${bucketHtml}</div>`;
+}
+
+function renderArchiveOverview() {
+  if (!archives.length) return '<div class="empty"><div class="empty-icon">📦</div><div>Aucun projet archivé.<br>Archivez un projet via 🖉 Modifier dans Dashboard.</div></div>';
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;">${archives.map(a=>{
+    const isSuccess = a.outcome !== 'failure';
+    const icon = isSuccess
+      ? `<svg viewBox="0 0 24 24" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L9 9H2l5.5 4-2 7L12 16l6.5 4-2-7L22 9h-7z" fill="#f5a623" stroke="#f5a623" stroke-width="0.5" stroke-linejoin="round"/></svg>`
+      : `<svg viewBox="0 0 24 24" width="36" height="36" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="rgba(240,96,96,0.18)" stroke="#f06060" stroke-width="1.5"/><line x1="8" y1="8" x2="16" y2="16" stroke="#f06060" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="8" x2="8" y2="16" stroke="#f06060" stroke-width="2" stroke-linecap="round"/></svg>`;
+    const outcomeColor = isSuccess ? 'var(--amber)' : 'var(--red)';
+    return `<div onclick="showArchiveProject('${a.id}')" style="background:var(--bg2);border:1px solid rgba(167,139,250,0.15);border-radius:var(--radius-lg);padding:20px 16px;cursor:pointer;transition:all 0.15s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px;" onmouseover="this.style.borderColor='rgba(167,139,250,0.4)';this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(167,139,250,0.15)';this.style.transform='none'">
+      <div style="opacity:0.9;">${icon}</div>
+      <div style="font-size:11px;color:${outcomeColor};font-family:var(--font-mono);font-weight:600;letter-spacing:0.04em;">${isSuccess ? 'SUCCÈS' : 'ÉCHEC'}</div>
+      <div style="font-size:13.5px;font-weight:600;line-height:1.4;color:var(--text);">${esc(a.title)}</div>
+      <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);">${fmt(a.archivedAt.split('T')[0])}</div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function toggleSubtasks(taskId) {
+  const block = document.getElementById(`sub-${taskId}`);
+  const icon  = document.getElementById(`exp-${taskId}`);
+  if (!block) return;
+  const isOpen = !block.classList.contains('collapsed');
+  block.classList.toggle('collapsed', isOpen);
+  if (icon) icon.classList.toggle('open', !isOpen);
+}
+function toggleGroup(h) {
+  const b=h.nextElementSibling, ch=h.querySelector('.chevron'), o=ch.classList.toggle('open');
+  b.style.display=o?'':'none';
+}
+
+// ══════════════════════════════════════════════════════
+// TASK CRUD
+// ══════════════════════════════════════════════════════
+function openAddTask() {
+  editingTaskId=null;
+  document.getElementById('modalTitle').textContent='Nouvel objectif';
+  ['taskTitle','taskDesc','taskDate'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('taskStatus').value='todo';
+  document.getElementById('outcomeGroup').style.display='none';
+  selectOutcome(null);
+  document.getElementById('subtasksEditor').innerHTML='';
+  document.getElementById('btnDeleteTask').style.display='none';
+  document.getElementById('taskModal').classList.add('open');
+}
+function openEditTask(listId, taskId) {
+  const p=projects.find(x=>x.id===listId), t=p?.tasks.find(x=>x.id===taskId); if(!t) return;
+  editingTaskId=taskId; editingProjectId=listId;
+  document.getElementById('modalTitle').textContent="Modifier l'objectif";
+  document.getElementById('taskTitle').value=t.title;
+  document.getElementById('taskDesc').value=t.description;
+  document.getElementById('taskDate').value=t.due;
+  document.getElementById('taskStatus').value=t.status;
+  const isDoneEdit = t.status === 'done';
+  document.getElementById('outcomeGroup').style.display = isDoneEdit ? '' : 'none';
+  selectOutcome(t.outcome || null);
+  document.getElementById('subtasksEditor').innerHTML='';
+  t.subtasks.forEach(s=>addSubtaskField(s.title));
+  document.getElementById('btnDeleteTask').style.display='flex';
+  document.getElementById('taskModal').classList.add('open');
+}
+function onStatusChange(v) {
+  document.getElementById('outcomeGroup').style.display = v === 'done' ? '' : 'none';
+}
+function closeTaskModal() { document.getElementById('taskModal').classList.remove('open'); }
+function addSubtaskField(v='') {
+  const r=document.createElement('div'); r.className='subtask-edit-row';
+  r.innerHTML=`<input type="text" class="form-input subtask-edit-input" placeholder="Action…" value="${esc(v)}"><button style="background:var(--bg4);border:1px solid var(--border);border-radius:7px;width:32px;height:32px;cursor:pointer;color:var(--text2);" onclick="this.parentElement.remove()">✕</button>`;
+  document.getElementById('subtasksEditor').appendChild(r);
+}
+async function saveTask() {
+  const title=document.getElementById('taskTitle').value.trim(); if(!title){showNotif('Titre requis','error');return;}
+  const listId=currentId||editingProjectId; if(!listId) return;
+  const td={ title, description:document.getElementById('taskDesc').value.trim(),
+    status:document.getElementById('taskStatus').value,
+    outcome: document.getElementById('taskStatus').value === 'done' ? selectedOutcome : null,
+    due:document.getElementById('taskDate').value,
+    subtasks:[...document.querySelectorAll('.subtask-edit-input')].map(i=>i.value.trim()).filter(Boolean) };
+  const btn=document.getElementById('btnSaveTask'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>';
+  try {
+    const notes=buildNotes(td), body={title:td.title,notes,status:td.status==='done'?'completed':'needsAction'};
+    if(td.due) body.due=td.due+'T00:00:00.000Z';
+    if(editingTaskId) {
+      await apiCall(`/lists/${listId}/tasks/${editingTaskId}`,{method:'PATCH',body:JSON.stringify(body)});
+      const p=projects.find(x=>x.id===listId), ex=p?.tasks.find(t=>t.id===editingTaskId);
+      for(const s of ex?.subtasks||[]) if(!td.subtasks.includes(s.title)) await apiCall(`/lists/${listId}/tasks/${s.id}`,{method:'DELETE'});
+      for(const st of td.subtasks) if(!ex?.subtasks.find(s=>s.title===st)) await apiCall(`/lists/${listId}/tasks?parent=${encodeURIComponent(editingTaskId)}`,{method:'POST',body:JSON.stringify({title:st})});
+    } else {
+      const r=await apiCall(`/lists/${listId}/tasks`,{method:'POST',body:JSON.stringify(body)});
+      for(const st of td.subtasks) await apiCall(`/lists/${listId}/tasks?parent=${encodeURIComponent(r.id)}`,{method:'POST',body:JSON.stringify({title:st})});
+    }
+    closeTaskModal(); await syncAll(); showNotif('Objectif enregistré ✓','success');
+  } catch(e){showNotif('Erreur : '+e.message,'error');}
+  btn.disabled=false; btn.textContent='Enregistrer';
+}
+async function toggleTask(listId, taskId) {
+  const p=projects.find(x=>x.id===listId), t=p?.tasks.find(x=>x.id===taskId); if(!t) return;
+  const ns=t.status!=='done'?'done':'todo';
+  t.status=ns; renderMain();
+  await apiCall(`/lists/${listId}/tasks/${taskId}`,{method:'PATCH',body:JSON.stringify({status:ns==='done'?'completed':'needsAction',notes:buildNotes({...t,status:ns})})});
+}
+async function toggleSubtask(listId, parentId, subId) {
+  const p=projects.find(x=>x.id===listId),t=p?.tasks.find(x=>x.id===parentId),s=t?.subtasks.find(x=>x.id===subId); if(!s) return;
+  s.done=!s.done; renderMain();
+  await apiCall(`/lists/${listId}/tasks/${subId}`,{method:'PATCH',body:JSON.stringify({status:s.done?'completed':'needsAction'})});
+}
+
+// ══════════════════════════════════════════════════════
+// PROJECT MODAL
+// ══════════════════════════════════════════════════════
+function _openProjModal(project, isArchive) {
+  modalProjectId  = project ? project.id : null;
+  modalIsArchive  = !!isArchive;
+  const isEdit    = !!project;
+  document.getElementById('projectModalTitle').textContent = isEdit
+    ? (isArchive ? '📦 Projet archivé' : 'Modifier le projet')
+    : 'Nouveau projet';
+  document.getElementById('btnSaveProject').textContent   = isEdit ? 'Enregistrer' : 'Créer';
+  document.getElementById('btnSaveProject').style.display = '';
+  document.getElementById('projectName').value            = isEdit ? project.title : '';
+  const col = isEdit ? project.color : COLORS[0];
+  selectedColor = col;
+  document.getElementById('projectColors').innerHTML = COLORS.map(c=>
+    `<div class="color-swatch ${c===col?'selected':''}" style="background:${c};" onclick="selectColor('${c}',this)"></div>`
+  ).join('');
+  // buttons
+  document.getElementById('btnModalDelete').style.display              = isEdit && !isArchive ? '' : 'none';
+  document.getElementById('btnModalArchiveSuccess').style.display      = isEdit && !isArchive ? '' : 'none';
+  document.getElementById('btnModalArchiveFailure').style.display      = isEdit && !isArchive ? '' : 'none';
+  document.getElementById('btnModalRestore').style.display             = isEdit && isArchive  ? '' : 'none';
+  document.getElementById('btnModalDeleteArchive').style.display       = isEdit && isArchive  ? '' : 'none';
+  // Group selector: show for new projects and edits, hide for archive entries
+  document.getElementById('groupSelectorWrap').style.display = isArchive ? 'none' : '';
+  const currentGroup = isEdit && !isArchive ? getGroup(project.id) : 'lists';
+  selectGroup(currentGroup);
+  document.getElementById('projectModal').classList.add('open');
+}
+function openNewProject()     { _openProjModal(null, false); }
+function openEditProject(id)  { const p=projects.find(x=>x.id===id); if(p) _openProjModal(p, false); }
+function openEditArchive(id)  { const a=archives.find(x=>x.id===id); if(a) _openProjModal(a, true);  }
+
+let selectedGroup = 'lists';
+let selectedOutcome = null;
+function selectGroup(g) {
+  selectedGroup = g;
+  document.getElementById('groupBtnLists').classList.toggle('selected', g === 'lists');
+  document.getElementById('groupBtnObjectives').classList.toggle('selected', g === 'objectives');
+}
+function selectOutcome(val) {
+  selectedOutcome = val;
+  ['outcomeBtnNone','outcomeBtnSuccess','outcomeBtnFailure'].forEach(id => {
+    document.getElementById(id).classList.remove('selected');
+  });
+  if (val === 'success') document.getElementById('outcomeBtnSuccess').classList.add('selected');
+  else if (val === 'failure') document.getElementById('outcomeBtnFailure').classList.add('selected');
+  else document.getElementById('outcomeBtnNone').classList.add('selected');
+}
+function selectColor(c,el) {
+  selectedColor=c;
+  document.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function closeProjectModal() { document.getElementById('projectModal').classList.remove('open'); modalProjectId=null; }
+
+async function saveProject() {
+  const name=document.getElementById('projectName').value.trim(); if(!name){showNotif('Nom requis','error');return;}
+  const btn=document.getElementById('btnSaveProject'); btn.disabled=true;
+  if (modalIsArchive) {
+    // Update archive entry locally
+    const a=archives.find(x=>x.id===modalProjectId); if(a){a.title=name;a.color=selectedColor;}
+    try { await driveSave(); closeProjectModal(); renderSidebar(); renderMain(); showNotif('Archive mise à jour ✓','success'); }
+    catch(e){showNotif('Erreur : '+e.message,'error');}
+  } else if (modalProjectId) {
+    // Edit active project
+    try {
+      await apiCall(`/users/@me/lists/${modalProjectId}`,{method:'PATCH',body:JSON.stringify({title:name})});
+      setColor(modalProjectId, selectedColor);
+      setGroup(modalProjectId, selectedGroup);
+      await driveSave().catch(()=>{});
+      closeProjectModal(); await syncAll(); showNotif('Projet mis à jour ✓','success');
+    } catch(e){showNotif('Erreur : '+e.message,'error');}
+  } else {
+    // Create new
+    try {
+      const r=await apiCall('/users/@me/lists',{method:'POST',body:JSON.stringify({title:name})});
+      setColor(r.id, selectedColor);
+      setGroup(r.id, selectedGroup);
+      await driveSave().catch(()=>{});
+      closeProjectModal(); await syncAll(); showProject(r.id);
+      showNotif('Projet créé ✓','success');
+    } catch(e){showNotif('Erreur : '+e.message,'error');}
+  }
+  btn.disabled=false;
+}
+
+function _modalAction(action) {
+  const id=modalProjectId; if(!id) return;
+  if (action==='delete') {
+    closeProjectModal(); confirmDeleteProject(id);
+  } else if (action==='archive-success' || action==='archive-failure') {
+    const p=projects.find(x=>x.id===id); if(!p) return;
+    const outcome = action==='archive-success' ? 'success' : 'failure';
+    const label = outcome==='success' ? 'Succès 🏆' : 'Échec ✕';
+    closeProjectModal();
+    openConfirm(`Archiver ce projet (${label}) ?`,
+      `"${p.title}" sera supprimé de Google Tasks et sauvegardé dans votre Archive Drive avec le statut "${label}". Il pourra être restauré à tout moment.`,
+      ()=>doArchive(id, outcome));
+  } else if (action==='restore') {
+    const a=archives.find(x=>x.id===id); if(!a) return;
+    // Save name/color edits before restore
+    const name=document.getElementById('projectName').value.trim();
+    a.title=name||a.title; a.color=selectedColor;
+    closeProjectModal();
+    openConfirm('Restaurer ce projet ?',
+      `"${a.title}" sera recréé dans Google Tasks et retiré des archives.`,
+      ()=>doRestore(id));
+  } else if (action==='delete-archive') {
+    const a=archives.find(x=>x.id===id); if(!a) return;
+    closeProjectModal();
+    openConfirm('Supprimer ce projet archivé ?',
+      `"${a.title}" sera supprimé définitivement des archives. Cette action est irréversible.`,
+      async()=>{
+        archives = archives.filter(x=>x.id!==id);
+        if (currentId===id) { currentId=null; showArchiveOverview(); }
+        await driveSave();
+        renderSidebar(); renderMain();
+        showNotif('Archive supprimée ✓','success');
+      });
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// CONFIRM
+// ══════════════════════════════════════════════════════
+let _cb=null;
+function openConfirm(title,body,cb) {
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmBody').textContent=body;
+  _cb=cb; document.getElementById('confirmModal').classList.add('open');
+}
+function closeConfirm() { document.getElementById('confirmModal').classList.remove('open'); _cb=null; }
+
+function confirmDeleteTask() {
+  const listId=editingProjectId, taskId=editingTaskId; if(!listId||!taskId) return;
+  const p=projects.find(x=>x.id===listId), t=p?.tasks.find(x=>x.id===taskId);
+  openConfirm('Supprimer cet objectif ?',`"${t?.title||'Cet objectif'}" et ses actions seront supprimés définitivement.`, async()=>{
+    closeTaskModal();
+    try{for(const s of t?.subtasks||[]) await apiCall(`/lists/${listId}/tasks/${s.id}`,{method:'DELETE'}); await apiCall(`/lists/${listId}/tasks/${taskId}`,{method:'DELETE'}); await syncAll(); showNotif('Objectif supprimé ✓','success');}
+    catch(e){showNotif('Erreur : '+e.message,'error');}
+  });
+}
+function confirmDeleteProject(projectId) {
+  const p=projects.find(x=>x.id===projectId); if(!p) return;
+  openConfirm('Supprimer ce projet ?',`"${p.title}" sera supprimé définitivement de Google Tasks.`, async()=>{
+    try {
+      // Fetch ALL tasks including hidden/completed to avoid 409 on list delete
+      const tData = await apiCall(`/lists/${projectId}/tasks?maxResults=100&showCompleted=true&showHidden=true`);
+      const allTasks = tData?.items || [];
+      // Delete subtasks first, then parent tasks
+      const subtasks = allTasks.filter(t=>t.parent);
+      const parents  = allTasks.filter(t=>!t.parent);
+      for (const s of subtasks) { try { await apiCall(`/lists/${projectId}/tasks/${s.id}`,{method:'DELETE'}); } catch(_){} }
+      for (const t of parents)  { try { await apiCall(`/lists/${projectId}/tasks/${t.id}`,{method:'DELETE'}); } catch(_){} }
+      await apiCall(`/users/@me/lists/${projectId}`,{method:'DELETE'});
+      removeProjectFromOrder(projectId);
+      if(currentId===projectId){currentId=null;showOverview();}
+      await syncAll();
+      showNotif('Projet supprimé ✓','success');
+    } catch(e){showNotif('Erreur : '+e.message,'error'); console.error(e);}
+  });
+}
+
+// ══════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════
+function setSyncing(v) {
+  document.getElementById('syncDot').classList.toggle('syncing',v);
+  document.getElementById('syncLabel').textContent=v?'Synchronisation…':'Synchronisé';
+}
+function fmt(d) {
+  if(!d) return '';
+  const [y,m,day]=d.split('-'), months=['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  return `${+day} ${months[+m-1]} ${y}`;
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+let _nt;
+function showNotif(msg,type='info'){const el=document.getElementById('notif');el.textContent=msg;el.className=`notif ${type} show`;clearTimeout(_nt);_nt=setTimeout(()=>el.classList.remove('show'),3000);}
+
+
+// ══════════════════════════════════════════════════════
+// DRAG & DROP — sidebar project reorder
+// ══════════════════════════════════════════════════════
+let _dragId = null;
+
+function onDragStart(e, id) {
+  _dragId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  e.currentTarget.classList.add('dragging');
+}
+function onDragEnd(e) {
+  _dragId = null;
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.remove('dragging', 'drag-over');
+  });
+}
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+function onDragEnter(e) {
+  e.preventDefault();
+  const el = e.currentTarget;
+  if (el.dataset.pid !== _dragId) el.classList.add('drag-over');
+}
+function onDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+function onDrop(e, targetId) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (!_dragId || _dragId === targetId) return;
+  // Reorder within same group — also adopt target's group
+  const targetGroup = document.querySelector(`[data-pid="${targetId}"]`)?.dataset.group || getGroup(targetId);
+  setGroup(_dragId, targetGroup);
+  const sorted = sortedProjects();
+  const ids = sorted.map(p => p.id);
+  const fromIdx = ids.indexOf(_dragId);
+  const toIdx   = ids.indexOf(targetId);
+  if (fromIdx === -1 || toIdx === -1) return;
+  ids.splice(fromIdx, 1);
+  ids.splice(toIdx, 0, _dragId);
+  renderSidebar(); // optimistic
+  saveProjectOrder(ids).catch(e => console.warn(e));
+}
+function onDropZone(e, group) {
+  e.preventDefault();
+  document.getElementById(group === 'lists' ? 'groupLists' : 'groupObjectives').classList.remove('zone-over');
+  if (!_dragId) return;
+  if (getGroup(_dragId) === group) return; // already in this group, no-op
+  setGroup(_dragId, group);
+  renderSidebar(); // optimistic
+  driveSave().catch(e => console.warn('group save failed:', e));
+}
+function onZoneEnter(e, group) {
+  e.preventDefault();
+  // Only highlight if dragging a project and the event target is the zone itself
+  if (_dragId) document.getElementById(group === 'lists' ? 'groupLists' : 'groupObjectives').classList.add('zone-over');
+}
+function onZoneLeave(e, group) {
+  const zone = document.getElementById(group === 'lists' ? 'groupLists' : 'groupObjectives');
+  if (!zone.contains(e.relatedTarget)) zone.classList.remove('zone-over');
+}
+
+function debugTasks() {
+  const p = projects.find(x=>x.id===currentId); if(!p){showNotif("Ouvre un projet d'abord","error");return;}
+  const info = p.tasks.map(t=>`• ${t.title} [${t.status}] — ${t.subtasks.length} sous-tâches: ${t.subtasks.map(s=>s.title).join(", ")||"aucune"}`).join("\n");
+  alert(`Projet: ${p.title}\n\n${info}`);
+}
+// Event listeners
+document.getElementById('taskModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeTaskModal();});
+document.getElementById('projectModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeProjectModal();});
+document.getElementById('confirmModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeConfirm();});
+document.getElementById('btnConfirmOk').addEventListener('click',()=>{if(_cb)_cb();closeConfirm();});
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+let driveReady = false;
+
+(async function init(){
+  const gotToken = checkTokenInUrl();
+  if (gotToken || isTokenValid()) {
+    document.getElementById('authScreen').style.display = 'none';
+    document.getElementById('appMain').style.display = 'grid';
+
+    driveReady = await checkDriveScope();
+
+    if (!driveReady) {
+      // Drive scope missing — show a non-blocking warning in the Archive tab only
+      // Do NOT clear the token or redirect (causes infinite loop)
+      console.warn('Drive scope not available — Archive feature disabled');
+      showNotif('Archive désactivée : activez Google Drive API dans GCP', 'info');
+    }
+
+    syncAll();
+  } else {
+    document.getElementById('authScreen').style.display = 'flex';
+  }
+})();
+</script>
+</body>
+</html>
